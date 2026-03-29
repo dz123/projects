@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}:~{% endblock %}
+
+{% block content %}
+
+<!-- Loading screen -->
+<div id="boot-screen">
+    <div id="boot-lines"></div>
+    <div id="boot-prompt">
+        <span class="prompt">dan@zhou</span><span class="prompt-path"> ~</span><span class="cmd"> $ ./init.sh</span><span id="boot-ellipsis"></span>
+    </div>
+</div>
+
+<!-- Actual landing (hidden until boot completes) -->
+<div class="landing" id="main-landing" style="display:none;">
+    {% if photo_exists %}
+    <img src="{{ url_for('static', filename='dan.jpg') }}" alt="Dan Zhou" class="landing-photo" />
+    {% else %}
+    <div class="landing-photo-placeholder">👤</div>
+    {% endif %}
+    <h1 class="landing-name">Dan (Yu) Zhou</h1>
+    <p class="landing-tagline">Dad. Quant. Foodie with a Belly.</p>
+</div>
+
+<style>
+#boot-screen {
+    padding: 2rem 3rem;
+    min-height: calc(100vh - 45px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.4rem;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+#boot-lines div {
+    font-size: 0.88rem;
+    line-height: 1.9;
+    color: #c9d1d9;
+}
+
+#boot-lines .ok   { color: #3fb950; }
+#boot-lines .warn { color: #f0883e; }
+#boot-lines .info { color: #58a6ff; }
+#boot-lines .dim  { color: #8b949e; }
+
+#boot-prompt {
+    margin-top: 0.6rem;
+    font-size: 0.88rem;
+}
+
+#boot-ellipsis { color: #3fb950; }
+
+#main-landing {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+</style>
+
+<script>
+const lines = [
+    { text: 'Booting dan@zhou v2.1.0 ...',            cls: 'dim'  },
+    { text: '[  OK  ] Loaded kernel modules',          cls: 'ok'   },
+    { text: '[  OK  ] Mounted /home/dan',              cls: 'ok'   },
+    { text: '[  OK  ] Started portfolio daemon',       cls: 'ok'   },
+    { text: '[ WARN ] 3 unread Slack messages ignored',cls: 'warn' },
+    { text: '[  OK  ] Loaded quant strategies',        cls: 'ok'   },
+    { text: '[  OK  ] Baby Evan online',               cls: 'ok'   },
+    { text: '[  OK  ] Food coma module loaded',        cls: 'ok'   },
+    { text: '[ INFO ] Checking for updates...',        cls: 'info' },
+    { text: '[  OK  ] All systems nominal',            cls: 'ok'   },
+];
+
+const container = document.getElementById('boot-lines');
+const ellipsisEl = document.getElementById('boot-ellipsis');
+const bootScreen = document.getElementById('boot-screen');
+const mainLanding = document.getElementById('main-landing');
+
+const totalDuration = 3000;
+const interval = totalDuration / (lines.length + 1);
+
+// Print lines one by one
+lines.forEach((line, i) => {
+    setTimeout(() => {
+        const div = document.createElement('div');
+        div.className = line.cls;
+        div.textContent = line.text;
+        container.appendChild(div);
+    }, i * interval);
+});
+
+// Animate ellipsis
+let dots = 0;
+const ellipsisTimer = setInterval(() => {
+    dots = (dots + 1) % 4;
+    ellipsisEl.textContent = '.'.repeat(dots);
+}, 400);
+
+// Fade out boot screen, reveal landing
+setTimeout(() => {
+    clearInterval(ellipsisTimer);
+    ellipsisEl.textContent = '...';
+    bootScreen.style.opacity = '0';
+    setTimeout(() => {
+        bootScreen.style.display = 'none';
+        mainLanding.style.display = 'flex';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => { mainLanding.style.opacity = '1'; });
+        });
+    }, 500);
+}, totalDuration);
+</script>
+
+{% endblock %}

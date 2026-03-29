@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}:~/about{% endblock %}
+
+{% block content %}
+<div class="term-window">
+
+    <div class="term-chrome">
+        <div class="term-titlebar">about.md — dan@zhou</div>
+        <div class="term-body">
+
+            <div><span class="prompt">dan@zhou</span><span class="prompt-path"> ~/about</span><span class="cmd"> $ cat family.txt</span></div>
+            <div class="output">
+                My son Evan just turned one and a half and has already surpassed me in charm. Being a dad
+                is the best role I've taken on — and the most unpredictable one. It's the only job I've
+                found with a <u>lifetime</u> noncompete.
+            </div>
+
+            <div><span class="prompt">dan@zhou</span><span class="prompt-path"> ~/about</span><span class="cmd"> $ cat work.txt</span></div>
+            <div class="output">
+                I'm a quantitative researcher building equities stat-arb strategies. Most of my day is spent
+                thinking about alphas, data pipelines, and why a backtest that looked great yesterday
+                is flat today.
+            </div>
+
+            <div><span class="prompt">dan@zhou</span><span class="prompt-path"> ~/about</span><span class="cmd"> $ cat food.txt</span></div>
+            <div class="output">
+                I eat with intent and without regret. The belly is a feature, not a bug.
+                If there's a good ramen or dim sum spot nearby, I will find it.
+            </div>
+
+            <div><span class="prompt">dan@zhou</span><span class="prompt-path"> ~/about</span><span class="cmd"> $ cat hobbies.txt</span></div>
+            <div class="output">
+                <span class="output-label">active:   </span><span class="output-value">rock climbing, ultimate frisbee, running</span><br/>
+                <span class="output-label">nerdy:    </span><span class="output-value">Kaggle competitions, Project Euler, poker</span>
+            </div>
+
+            <div><span class="prompt">dan@zhou</span><span class="prompt-path"> ~/about</span><span class="cmd"> $ <span class="cursor"></span></span></div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

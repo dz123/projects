@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}:~/contact{% endblock %}
+
+{% block content %}
+<div class="term-window">
+
+    <div class="term-chrome">
+        <div class="term-titlebar">contact.sh — dan@zhou</div>
+        <div class="term-body">
+            <div><span class="prompt">dan@zhou</span><span class="prompt-path"> ~/contact</span><span class="cmd"> $ ./send_message.sh</span></div>
+            <div class="output">
+                <span class="comment"># Fill out the form below to get in touch</span>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="/contact" class="resume-form">
+                <div class="form-group">
+                    <label for="name">name</label>
+                    <input type="text" id="name" name="name" placeholder="Jane Smith" required />
+                </div>
+                <div class="form-group">
+                    <label for="email">email</label>
+                    <input type="email" id="email" name="email" placeholder="jane@example.com" required />
+                </div>
+                <div class="form-group">
+                    <label for="message">message <span class="optional">(optional)</span></label>
+                    <textarea id="message" name="message" placeholder="say hello..." maxlength="300" rows="4"></textarea>
+                    <div class="char-count"><span id="char-counter">0</span> / 300</div>
+                </div>
+                <button type="submit" class="btn-send">$ send</button>
+            </form>
+
+            <div style="margin-top:1.5rem;">
+                <span class="comment"># find me online</span><br/>
+                <a href="https://www.linkedin.com/in/yudanzhou/" target="_blank" class="linkedin-link">→ LinkedIn</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const ta = document.getElementById('message');
+    const counter = document.getElementById('char-counter');
+    ta.addEventListener('input', () => counter.textContent = ta.value.length);
+</script>
+{% endblock %}

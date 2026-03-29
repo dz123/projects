@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>dan@zhou{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+
+{% block content %}{% endblock %}
+
+<nav class="tmux-bar">
+    <div class="tmux-session">[dan@zhou]</div>
+    <div class="tmux-windows">
+        <a href="{{ url_for('landing') }}" class="tmux-win {% if request.endpoint == 'landing' %}active{% endif %}">0:home{% if request.endpoint == 'landing' %}*{% endif %}</a>
+        <a href="{{ url_for('about') }}" class="tmux-win {% if request.endpoint == 'about' %}active{% endif %}">1:about{% if request.endpoint == 'about' %}*{% endif %}</a>
+        <a href="{{ url_for('education') }}" class="tmux-win {% if request.endpoint == 'education' %}active{% endif %}">2:education{% if request.endpoint == 'education' %}*{% endif %}</a>
+        <a href="{{ url_for('work') }}" class="tmux-win {% if request.endpoint == 'work' %}active{% endif %}">3:work{% if request.endpoint == 'work' %}*{% endif %}</a>
+        <a href="{{ url_for('contact') }}" class="tmux-win {% if request.endpoint == 'contact' %}active{% endif %}">4:contact{% if request.endpoint == 'contact' %}*{% endif %}</a>
+    </div>
+    <div class="tmux-clock" id="tmux-clock"></div>
+</nav>
+
+<script>
+    function updateClock() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mo = now.toLocaleString('en-US', { month: 'short' });
+        const yy = String(now.getFullYear()).slice(-2);
+        document.getElementById('tmux-clock').textContent = `"" ${hh}:${mm} ${dd}-${mo}-${yy}`;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+</script>
+
+</body>
+</html>
