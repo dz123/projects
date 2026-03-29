@@ -73,18 +73,18 @@ async def run(urls: list[str]):
     run_start = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_to_claude_md(f"\n---\n## Run started: {run_start}  ({len(urls)} listings)\n")
 
+    ctx_args = dict(
+        user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        viewport={"width": 1280, "height": 900},
+        locale="en-US",
+    )
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False, slow_mo=1000)
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36"
-            ),
-            viewport={"width": 1280, "height": 900},
-            locale="en-US",
-        )
-        page = await context.new_page()
 
         with (
             open(available_path, "w", newline="", encoding="utf-8") as af,
@@ -104,7 +104,16 @@ async def run(urls: list[str]):
                 group = GROUP_MAP.get(url, "unknown")
                 print(f"\n[{i}/{len(urls)}] [{group}] {url}")
 
-                result = await scrape_listing(page, url)
+                # Fresh context per listing — resets cookies/session so Airbnb
+                # can't flag the session after many pricing page navigations.
+                context = await browser.new_context(**ctx_args)
+                page    = await context.new_page()
+
+                try:
+                    result = await scrape_listing(page, url)
+                finally:
+                    await context.close()
+
                 days   = result.get("days", {})
                 stays  = result.get("stays", [])
                 error  = result.get("error")
@@ -125,8 +134,8 @@ async def run(urls: list[str]):
 
                     af.flush(); bf.flush(); rf.flush()
 
-                    avail_n  = sum(1 for v in days.values() if v)
-                    booked_n = sum(1 for v in days.values() if not v)
+                    avail_n  = len([v for v in days.values() if v in {"_1xnkk5ra", "_697u988", "_18qb17hx", "_5nf23wc"}])
+                    booked_n = len([v for v in days.values() if v in {"_1ytdkbl5", "_emqv0i7", "_riog819", "_1rl50hqv"}])
                     priced   = sum(1 for s in stays if s["total_price"] is not None)
                     summary  = (
                         f"unit={unit or '?'}  avail={avail_n}  booked={booked_n}  "

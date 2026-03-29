@@ -235,3 +235,10 @@ There are TWO sets of nav buttons on the page (inline calendar + booking sidebar
 2026-03-28 21:18:44  [10/29] OK     https://www.airbnb.com/rooms/32961319  unit=?  avail=0  booked=0  windows=0  priced=0  reviews=135  score=4.94
 2026-03-28 21:19:04  [11/29] OK     https://www.airbnb.com/rooms/43390500  unit=?  avail=0  booked=0  windows=0  priced=0  reviews=40  score=5.17
 2026-03-28 21:19:24  [12/29] OK     https://www.airbnb.com/rooms/1173408198220862708  unit=?  avail=0  booked=0  windows=0  priced=0  reviews=10  score=4.6
+2026-03-28 21:22:39  
+---
+## Run started: 2026-03-28 21:22:39  (29 listings)
+
+2026-03-28 21:30:15  [1/29] OK     https://www.airbnb.com/rooms/859411360329483540  unit=?  avail=69  booked=26  windows=33  priced=32  reviews=9  score=5.05
+2026-03-28 21:35:10  [2/29] OK     https://www.airbnb.com/rooms/47354990  unit=?  avail=37  booked=58  windows=17  priced=17  reviews=76  score=4.89
+2026-03-28 21:40:24  [3/29] OK     https://www.airbnb.com/rooms/564846980716582592  unit=?  avail=40  booked=55  windows=18  priced=17  reviews=6  score=4.67
