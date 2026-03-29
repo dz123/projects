@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Daisy {% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+
+<nav>
+<ul>
+        <li><a href="{{ url_for('landing') }}" {% if request.endpoint == 'landing' %}class="active"{% endif %}>Home</a></li>
+        <li><a href="{{ url_for('about') }}" {% if request.endpoint == 'about' %}class="active"{% endif %}>About</a></li>
+        <li><a href="{{ url_for('education') }}" {% if request.endpoint == 'education' %}class="active"{% endif %}>Education</a></li>
+        <li><a href="{{ url_for('work') }}" {% if request.endpoint == 'work' %}class="active"{% endif %}>Work Experience</a></li>
+        <li><a href="{{ url_for('contact') }}" {% if request.endpoint == 'contact' %}class="active"{% endif %}>Contact</a></li>
+    </ul>
+</nav>
+
+{% block content %}{% endblock %}
+
+
+</body>
+</html>
