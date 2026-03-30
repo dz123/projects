@@ -1,0 +1,43 @@
+{% extends 'simple/base.html' %}
+{% block title %} — Contact{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Contact</h1>
+
+    <div class="card">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" action="/contact" class="resume-form">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" placeholder="Jane Smith" required />
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="jane@example.com" required />
+            </div>
+            <div class="form-group">
+                <label for="message">Message <span class="optional">(optional)</span></label>
+                <textarea id="message" name="message" placeholder="say hello..." maxlength="300" rows="4"></textarea>
+                <div class="char-count"><span id="char-counter">0</span> / 300</div>
+            </div>
+            <button type="submit" class="btn-send">Send</button>
+        </form>
+
+        <div style="margin-top:1.5rem;">
+            <a href="https://www.linkedin.com/in/yudanzhou/" target="_blank" class="linkedin-link">LinkedIn</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ta = document.getElementById('message');
+    const counter = document.getElementById('char-counter');
+    ta.addEventListener('input', () => counter.textContent = ta.value.length);
+</script>
+{% endblock %}

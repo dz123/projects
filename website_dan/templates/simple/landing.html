@@ -1,0 +1,14 @@
+{% extends 'simple/base.html' %}
+{% block title %}{% endblock %}
+
+{% block content %}
+<div class="landing">
+    {% if photo_exists %}
+    <img src="{{ url_for('static', filename='dan.jpg') }}" alt="Dan Zhou" class="landing-photo" />
+    {% else %}
+    <div class="landing-photo-placeholder">👤</div>
+    {% endif %}
+    <h1 class="landing-name">Dan (Yu) Zhou</h1>
+    <p class="landing-tagline">Dad. Quant. Foodie with a Belly.</p>
+</div>
+{% endblock %}

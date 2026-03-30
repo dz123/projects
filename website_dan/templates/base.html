@@ -20,6 +20,14 @@
         <a href="{{ url_for('contact') }}" class="tmux-win {% if request.endpoint == 'contact' %}active{% endif %}">4:contact{% if request.endpoint == 'contact' %}*{% endif %}</a>
     </div>
     <div class="tmux-clock" id="tmux-clock"></div>
+    {% set simple_map = {
+        'landing':   'simple_landing',
+        'about':     'simple_about',
+        'education': 'simple_education',
+        'work':      'simple_work',
+        'contact':   'simple_contact'
+    } %}
+    <a href="{{ url_for(simple_map.get(request.endpoint, 'simple_landing')) }}" class="view-toggle">simple view</a>
 </nav>
 
 <script>
@@ -30,7 +38,10 @@
         const dd = String(now.getDate()).padStart(2, '0');
         const mo = now.toLocaleString('en-US', { month: 'short' });
         const yy = String(now.getFullYear()).slice(-2);
-        document.getElementById('tmux-clock').textContent = `${hh}:${mm} ${dd}-${mo}-${yy}`;
+        const text = window.innerWidth <= 600
+            ? `${dd}-${mo}-${yy}`
+            : `${hh}:${mm} ${dd}-${mo}-${yy}`;
+        document.getElementById('tmux-clock').textContent = text;
     }
     updateClock();
     setInterval(updateClock, 1000);

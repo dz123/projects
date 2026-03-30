@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dan Zhou{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_simple.css') }}"/>
+</head>
+<body>
+
+<nav>
+    <ul>
+        <li><a href="{{ url_for('simple_landing') }}" {% if request.endpoint == 'simple_landing' %}class="active"{% endif %}>Home</a></li>
+        <li><a href="{{ url_for('simple_about') }}" {% if request.endpoint == 'simple_about' %}class="active"{% endif %}>About</a></li>
+        <li><a href="{{ url_for('simple_education') }}" {% if request.endpoint == 'simple_education' %}class="active"{% endif %}>Education</a></li>
+        <li><a href="{{ url_for('simple_work') }}" {% if request.endpoint == 'simple_work' %}class="active"{% endif %}>Work</a></li>
+        <li><a href="{{ url_for('simple_contact') }}" {% if request.endpoint == 'simple_contact' %}class="active"{% endif %}>Contact</a></li>
+    </ul>
+    {% set term_map = {
+        'simple_landing':   'landing',
+        'simple_about':     'about',
+        'simple_education': 'education',
+        'simple_work':      'work',
+        'simple_contact':   'contact'
+    } %}
+    <a href="{{ url_for(term_map.get(request.endpoint, 'landing')) }}" class="view-toggle">terminal view</a>
+</nav>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>
