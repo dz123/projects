@@ -1,7 +1,13 @@
 import os
+
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
+try:
+    import requests as http_requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
 
 load_dotenv()
 
@@ -15,6 +21,24 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 
 mail = Mail(app)
+
+
+def get_geo(ip):
+    """Returns (country_code, display_string). country_code is '' on lookup failure."""
+    if not HAS_REQUESTS:
+        return "", "unknown"
+    try:
+        r = http_requests.get(
+            f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,city",
+            timeout=3
+        )
+        data = r.json()
+        if data.get("status") == "success":
+            return data.get("countryCode", ""), f"{data.get('country', '')} ({data.get('city', '')})"
+    except Exception:
+        pass
+    return "", "unknown"
+
 
 @app.route('/')
 def landing():
@@ -43,6 +67,13 @@ def contact():
             flash('Please fill out both fields.', 'error')
             return redirect(url_for('contact'))
 
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+        country_code, country = get_geo(ip)
+
+        if country_code and country_code != "US":
+            flash('Your message was sent! Daisy will be in touch soon.', 'success')
+            return redirect(url_for('contact'))
+
         try:
             recipient = os.environ.get('MAIL_RECIPIENT')
             msg = Message(
@@ -50,7 +81,7 @@ def contact():
                 sender=app.config['MAIL_USERNAME'],
                 recipients=[recipient]
             )
-            body = f"Someone reached out via your website!\n\nName:  {name}\nEmail: {email}\n"
+            body = f"Someone reached out via your website!\n\nName:    {name}\nEmail:   {email}\nIP:      {ip}\nCountry: {country}\n"
             if message:
                 body += f"\nMessage:\n{message}\n"
             msg.body = body
