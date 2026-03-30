@@ -10,32 +10,32 @@ INTER_LISTING_PAUSE = 15  # seconds between listings
 
 # ── Airbnb listing URLs ────────────────────────────────────────────────────────
 KAMAOLE_SANDS = [
-    # "https://www.airbnb.com/rooms/49931996",         # done
-    # "https://www.airbnb.com/rooms/1351674021070226317",  # done
-    "https://www.airbnb.com/rooms/859411360329483540",
-    "https://www.airbnb.com/rooms/47354990",
-    "https://www.airbnb.com/rooms/564846980716582592",
-    "https://www.airbnb.com/rooms/13225921",
-    "https://www.airbnb.com/rooms/733608330309904024",
-    "https://www.airbnb.com/rooms/36351502",
-    "https://www.airbnb.com/rooms/1494594522868451704",
-    "https://www.airbnb.com/rooms/14895700",
-    "https://www.airbnb.com/rooms/659882298811850147",
-    "https://www.airbnb.com/rooms/32961319",
-    "https://www.airbnb.com/rooms/43390500",
-    "https://www.airbnb.com/rooms/1173408198220862708",
-    "https://www.airbnb.com/rooms/20048859",
-    "https://www.airbnb.com/rooms/573474217916601002",
-    "https://www.airbnb.com/rooms/983678966634889713",
+    # "https://www.airbnb.com/rooms/49931996",              # done
+    # "https://www.airbnb.com/rooms/1351674021070226317",   # done
+    # "https://www.airbnb.com/rooms/859411360329483540",    # done
+    # "https://www.airbnb.com/rooms/47354990",              # done
+    # "https://www.airbnb.com/rooms/564846980716582592",    # done
+    # "https://www.airbnb.com/rooms/13225921",              # done
+    # "https://www.airbnb.com/rooms/733608330309904024",    # done
+    # "https://www.airbnb.com/rooms/36351502",              # done
+    # "https://www.airbnb.com/rooms/1494594522868451704",   # done
+    # "https://www.airbnb.com/rooms/14895700",              # done
+    # "https://www.airbnb.com/rooms/659882298811850147",    # done
+    # "https://www.airbnb.com/rooms/32961319",              # done
+    # "https://www.airbnb.com/rooms/43390500",              # done
+    # "https://www.airbnb.com/rooms/1173408198220862708",   # done
+    # "https://www.airbnb.com/rooms/20048859",              # done
+    # "https://www.airbnb.com/rooms/573474217916601002",    # done
+    # "https://www.airbnb.com/rooms/983678966634889713",    # done
 ]
 
 MAUI_VISTA = [
-    "https://www.airbnb.com/rooms/1515547004809606902",
-    "https://www.airbnb.com/rooms/1579709870450109135",
-    "https://www.airbnb.com/rooms/960849307156992001",
-    "https://www.airbnb.com/rooms/46194280",
-    "https://www.airbnb.com/rooms/31704158",
-    "https://www.airbnb.com/rooms/756031921076238815",
+    # "https://www.airbnb.com/rooms/1515547004809606902",   # done
+    # "https://www.airbnb.com/rooms/1579709870450109135",   # done
+    # "https://www.airbnb.com/rooms/960849307156992001",    # done
+    # "https://www.airbnb.com/rooms/46194280",              # done
+    # "https://www.airbnb.com/rooms/31704158",              # done
+    # "https://www.airbnb.com/rooms/756031921076238815",    # done
     "https://www.airbnb.com/rooms/582663501443755788",
     "https://www.airbnb.com/rooms/947888229024493083",
     "https://www.airbnb.com/rooms/990833735613623342",

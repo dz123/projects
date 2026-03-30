@@ -43,7 +43,7 @@ def is_checkin_eligible(cls: str) -> bool:
     return cls in AVAILABLE_CLASSES
 
 
-async def scrape_listing(page: Page, url: str) -> dict:
+async def scrape_listing(page: Page, url: str, min_nights: int = 2) -> dict:
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
         try:
@@ -172,7 +172,7 @@ async def scrape_listing(page: Page, url: str) -> dict:
             print(f"  month {month_offset + 1}: {found} new future dates collected")
 
         # ── Get pricing for valid check-in 2-night windows only ────────────
-        stays = build_available_windows(day_map)
+        stays = build_available_windows(day_map, min_nights=min_nights)
         print(f"  fetching prices for {len(stays)} check-in-eligible 2-night windows...")
 
         for stay in stays:
@@ -199,11 +199,12 @@ async def fetch_price(page: Page, base_url: str, check_in: str, check_out: str) 
         priced_url = f"{base_url}?check_in={check_in}&check_out={check_out}"
         await page.goto(priced_url, wait_until="domcontentloaded", timeout=30000)
         # Wait for network to go idle so the booking widget API call finishes
+        # Cap at 8s — some pages never fully reach networkidle and would hang forever
         try:
-            await page.wait_for_load_state("networkidle", timeout=15000)
+            await page.wait_for_load_state("networkidle", timeout=8000)
         except Exception:
             pass
-        await page.wait_for_timeout(2000)  # extra buffer after network idle
+        await page.wait_for_timeout(1500)  # extra buffer after network idle
 
         # Scroll booking sidebar into view to trigger rendering
         try:
@@ -230,6 +231,17 @@ async def fetch_price(page: Page, base_url: str, check_in: str, check_out: str) 
         if for_nights:
             return float(for_nights.group(1).replace(",", ""))
 
+        # "$689 $597Show price break" — discounted price (strikethrough + sale price)
+        # Take the second (lower/actual) price
+        discounted = re.search(r'\$[\d,]+\s*\$([\d,]+)Show price break', body)
+        if discounted:
+            return float(discounted.group(1).replace(",", ""))
+
+        # "These dates are priced lower than usual$XXXShow price breakdown"
+        lower_than_usual = re.search(r'lower than usual\s*\$([\d,]+)\s*(?:Show|for)', body, re.IGNORECASE)
+        if lower_than_usual:
+            return float(lower_than_usual.group(1).replace(",", ""))
+
         # "$X per night" × N nights line item (fallback format)
         nightly = re.search(r'\$([\d,]+)\s*(?:x|×)\s*\d+\s*night', body, re.IGNORECASE)
         if nightly:
@@ -250,26 +262,30 @@ async def fetch_price(page: Page, base_url: str, check_in: str, check_out: str) 
     return None
 
 
-def build_available_windows(day_map: dict[date, str]) -> list[dict]:
+def build_available_windows(day_map: dict[date, str], min_nights: int = 2) -> list[dict]:
     """
-    Find non-overlapping 2-night windows where:
-    - Night 1 (check-in) must be _1ytdkbl5 (check-in eligible)
-    - Night 2 can be _1ytdkbl5 or _emqv0i7 (available to sleep, even if checkout-only)
-    Non-overlapping: after window (D, D+1), next window starts at D+2.
+    Find non-overlapping min_nights windows where all nights are available.
+    Non-overlapping: after a window of N nights starting at D, next starts at D+N.
     """
     checkin_dates = sorted(d for d, cls in day_map.items() if is_checkin_eligible(cls))
     windows = []
     i = 0
     while i < len(checkin_dates):
         d = checkin_dates[i]
-        next_d = d + timedelta(days=1)
-        if next_d in day_map and is_available(day_map[next_d]):
+        # Check all nights in the window are available
+        nights = [d + timedelta(days=n) for n in range(1, min_nights)]
+        if all(nd in day_map and is_available(day_map[nd]) for nd in nights):
+            checkout = d + timedelta(days=min_nights)
             windows.append({
                 "start_date": d.isoformat(),
-                "end_date": (next_d + timedelta(days=1)).isoformat(),
+                "end_date": checkout.isoformat(),
                 "total_price": None,
             })
-            i += 2  # skip to next non-overlapping window
+            # Advance past the end of this window
+            next_checkin = d + timedelta(days=min_nights)
+            i += 1
+            while i < len(checkin_dates) and checkin_dates[i] < next_checkin:
+                i += 1
         else:
             i += 1
     return windows
