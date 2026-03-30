@@ -1,6 +1,10 @@
 import os
-import requests as http_requests
 from pathlib import Path
+try:
+    import requests as http_requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
@@ -21,6 +25,8 @@ mail = Mail(app)
 
 def get_geo(ip):
     """Returns (country_code, display_string). country_code is '' on lookup failure."""
+    if not HAS_REQUESTS:
+        return "", "unknown"
     try:
         r = http_requests.get(
             f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,city",
