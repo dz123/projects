@@ -17,6 +17,14 @@ body > *:not(nav) {
     flex: 1;
 }
 
+/* ── top toggle bar ── */
+.top-toggle-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.5rem 1.5rem;
+    background: #0d1117;
+}
+
 /* ── GNU screen-style bottom bar ── */
 .tmux-bar {
     background-color: #00bb00;
@@ -68,21 +76,20 @@ body > *:not(nav) {
 }
 
 .view-toggle {
-    background: transparent;
-    border: 1px solid #000;
-    color: #000;
+    background: #238636;
+    border: 1px solid #2ea043;
+    color: #fff;
     font-family: 'Courier New', monospace;
-    font-size: 0.72rem;
-    padding: 0.2rem 0.6rem;
-    margin-right: 0.5rem;
-    border-radius: 3px;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 4px;
     text-decoration: none;
     white-space: nowrap;
     transition: background 0.2s;
 }
 
 .view-toggle:hover {
-    background: rgba(0,0,0,0.1);
+    background: #2ea043;
 }
 
 .tmux-session {

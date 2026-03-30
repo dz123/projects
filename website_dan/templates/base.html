@@ -10,6 +10,17 @@
 
 {% block content %}{% endblock %}
 
+<div class="top-toggle-bar">
+    {% set simple_map = {
+        'landing':   'simple_landing',
+        'about':     'simple_about',
+        'education': 'simple_education',
+        'work':      'simple_work',
+        'contact':   'simple_contact'
+    } %}
+    <a href="{{ url_for(simple_map.get(request.endpoint, 'simple_landing')) }}" class="view-toggle">simple view</a>
+</div>
+
 <nav class="tmux-bar">
     <div class="tmux-session">[dan@zhou]</div>
     <div class="tmux-windows">
@@ -20,14 +31,6 @@
         <a href="{{ url_for('contact') }}" class="tmux-win {% if request.endpoint == 'contact' %}active{% endif %}">4:contact{% if request.endpoint == 'contact' %}*{% endif %}</a>
     </div>
     <div class="tmux-clock" id="tmux-clock"></div>
-    {% set simple_map = {
-        'landing':   'simple_landing',
-        'about':     'simple_about',
-        'education': 'simple_education',
-        'work':      'simple_work',
-        'contact':   'simple_contact'
-    } %}
-    <a href="{{ url_for(simple_map.get(request.endpoint, 'simple_landing')) }}" class="view-toggle">simple view</a>
 </nav>
 
 <script>
