@@ -1,0 +1,15 @@
+# Data and cache files
+data/
+*.fit
+
+# Environment variables and secrets
+.env
+
+# macOS system files
+.DS_Store
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+*.egg-info/

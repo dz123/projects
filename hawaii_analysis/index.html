@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hawaii Visitor Statistics</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  header p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+  .controls {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .control-group label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  select, .toggle-group {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 240px;
+  }
+  .toggle-group {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+  }
+  .toggle-group button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .toggle-group button.active {
+    background: var(--accent);
+    color: #0f172a;
+    font-weight: 600;
+  }
+  .islands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .island-chip {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .island-chip.active {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .chart-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    height: 500px;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stat .name {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .stat .value {
+    font-size: 20px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .stat .delta {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .delta.up { color: #4ade80; }
+  .delta.down { color: #f87171; }
+  .loading {
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 0;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hawaii Visitor Statistics</h1>
+  <p>Island comparison dashboard — source: DBEDT monthly visitor highlights</p>
+</header>
+<div class="container">
+  <div id="loading" class="loading">Loading data…</div>
+  <div id="app" style="display:none;">
+    <div class="controls">
+      <div class="control-group">
+        <label for="metric">Metric</label>
+        <select id="metric"></select>
+      </div>
+      <div class="control-group">
+        <label>Chart type</label>
+        <div class="toggle-group" id="chart-type">
+          <button data-type="line" class="active">Line</button>
+          <button data-type="bar">Bar</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>View</label>
+        <div class="toggle-group" id="view-mode">
+          <button data-mode="value" class="active">Value</button>
+          <button data-mode="yoy">YoY %</button>
+        </div>
+      </div>
+    </div>
+    <div class="islands" id="islands"></div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="summary" id="summary"></div>
+  </div>
+</div>
+
+<script>
+const CSV_PATH = "hawaii_visitor_stats.csv";
+
+const ISLANDS = ["oahu", "maui", "molokai", "lanai", "kauai", "hawaii island"];
+
+const ISLAND_COLORS = {
+  "oahu":          "#38bdf8",
+  "maui":          "#f472b6",
+  "molokai":       "#a78bfa",
+  "lanai":         "#fbbf24",
+  "kauai":         "#4ade80",
+  "hawaii island": "#fb923c",
+};
+
+const ISLAND_LABELS = {
+  "oahu":          "O‘ahu",
+  "maui":          "Maui",
+  "molokai":       "Moloka‘i",
+  "lanai":         "Lāna‘i",
+  "kauai":         "Kaua‘i",
+  "hawaii island": "Hawai‘i Island",
+};
+
+const METRIC_FORMATS = {
+  "TOTAL EXPENDITURES ($ MILLION)":  { prefix: "$", suffix: "M", decimals: 1 },
+  "TOTAL VISITOR DAYS":              { suffix: "",  decimals: 0 },
+  "VISITOR ARRIVALS":                { suffix: "",  decimals: 0 },
+  "AVERAGE DAILY CENSUS":            { suffix: "",  decimals: 0 },
+  "AVERAGE LENGTH OF STAY":          { suffix: " days", decimals: 2 },
+  "PER PERSON PER DAY SPENDING ($)": { prefix: "$", decimals: 2 },
+  "PER PERSON PER TRIP SPENDING ($)":{ prefix: "$", decimals: 2 },
+};
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines.shift().split(",");
+  return lines.map(line => {
+    const cols = line.split(",");
+    const row = {};
+    headers.forEach((h, i) => row[h] = cols[i]);
+    row.value = parseFloat(row.value);
+    return row;
+  });
+}
+
+function formatValue(v, metric) {
+  const f = METRIC_FORMATS[metric] || { decimals: 0 };
+  if (v === null || v === undefined || isNaN(v)) return "—";
+  const opts = { minimumFractionDigits: f.decimals, maximumFractionDigits: f.decimals };
+  return (f.prefix || "") + v.toLocaleString("en-US", opts) + (f.suffix || "");
+}
+
+function formatPct(v) {
+  if (v === null || v === undefined || isNaN(v)) return "—";
+  const sign = v >= 0 ? "+" : "";
+  return sign + v.toFixed(1) + "%";
+}
+
+function shiftMonth(ym, years) {
+  // ym = "YYYY-MM"
+  const [y, m] = ym.split("-").map(Number);
+  return `${y + years}-${String(m).padStart(2, "0")}`;
+}
+
+let rawData = [];
+let allMonths = [];
+let currentMetric = null;
+let chartType = "line";
+let viewMode = "value"; // "value" | "yoy"
+const activeIslands = new Set(ISLANDS.filter(i => i !== "molokai" && i !== "lanai"));
+let chart = null;
+
+function init(data) {
+  rawData = data;
+
+  // Unique sorted months
+  allMonths = [...new Set(data.map(r => r.year_month))].sort();
+
+  // Metric dropdown
+  const metrics = [...new Set(data.map(r => r.category))].sort();
+  const sel = document.getElementById("metric");
+  metrics.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = m;
+    sel.appendChild(opt);
+  });
+  currentMetric = metrics[0];
+  sel.value = currentMetric;
+  sel.addEventListener("change", e => {
+    currentMetric = e.target.value;
+    render();
+  });
+
+  // Island chips
+  const chipWrap = document.getElementById("islands");
+  ISLANDS.forEach(isl => {
+    const chip = document.createElement("div");
+    chip.className = "island-chip" + (activeIslands.has(isl) ? " active" : "");
+    chip.textContent = ISLAND_LABELS[isl];
+    chip.style.borderColor = ISLAND_COLORS[isl];
+    chip.style.boxShadow = `inset 0 0 0 1px ${ISLAND_COLORS[isl]}`;
+    chip.addEventListener("click", () => {
+      if (activeIslands.has(isl)) {
+        activeIslands.delete(isl);
+        chip.classList.remove("active");
+      } else {
+        activeIslands.add(isl);
+        chip.classList.add("active");
+      }
+      render();
+    });
+    chipWrap.appendChild(chip);
+  });
+
+  // Chart type toggle
+  document.querySelectorAll("#chart-type button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#chart-type button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      chartType = btn.dataset.type;
+      render();
+    });
+  });
+
+  // View mode toggle
+  document.querySelectorAll("#view-mode button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#view-mode button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      viewMode = btn.dataset.mode;
+      render();
+    });
+  });
+
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  render();
+}
+
+function render() {
+  const filtered = rawData.filter(r => r.category === currentMetric);
+
+  // Build data[island] = { year_month: value }
+  const byIsland = {};
+  ISLANDS.forEach(i => byIsland[i] = {});
+  filtered.forEach(r => {
+    if (byIsland[r.island]) byIsland[r.island][r.year_month] = r.value;
+  });
+
+  // In YoY mode, only show months that have a prior-year counterpart
+  const displayMonths = viewMode === "yoy"
+    ? allMonths.filter(m => allMonths.includes(shiftMonth(m, -1)))
+    : allMonths;
+
+  const getPoint = (isl, m) => {
+    const cur = byIsland[isl][m];
+    if (viewMode === "value") return cur ?? null;
+    const prev = byIsland[isl][shiftMonth(m, -1)];
+    if (cur == null || prev == null || prev === 0) return null;
+    return ((cur - prev) / prev) * 100;
+  };
+
+  const datasets = ISLANDS
+    .filter(i => activeIslands.has(i))
+    .map(isl => ({
+      label:           ISLAND_LABELS[isl],
+      data:            displayMonths.map(m => getPoint(isl, m)),
+      borderColor:     ISLAND_COLORS[isl],
+      backgroundColor: ISLAND_COLORS[isl] + (chartType === "bar" ? "cc" : "33"),
+      tension:         0.3,
+      spanGaps:        true,
+      pointRadius:     3,
+      borderWidth:     2,
+    }));
+
+  const fmtAxis = v => viewMode === "yoy" ? formatPct(v) : formatValue(v, currentMetric);
+  const titleText = viewMode === "yoy"
+    ? `${currentMetric} — YoY % change`
+    : currentMetric;
+
+  if (chart) chart.destroy();
+  const ctx = document.getElementById("chart").getContext("2d");
+  chart = new Chart(ctx, {
+    type: chartType,
+    data: { labels: displayMonths, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: "#e2e8f0", usePointStyle: true, padding: 16 },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${fmtAxis(ctx.parsed.y)}`,
+          },
+        },
+        title: {
+          display: true,
+          text: titleText,
+          color: "#e2e8f0",
+          font: { size: 15, weight: "600" },
+          padding: { bottom: 16 },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: "#94a3b8" },
+          grid:  { color: "#334155" },
+        },
+        y: {
+          ticks: { color: "#94a3b8", callback: fmtAxis },
+          grid:  { color: "#334155" },
+        },
+      },
+    },
+  });
+
+  renderSummary(byIsland);
+}
+
+function renderSummary(byIsland) {
+  const wrap = document.getElementById("summary");
+  wrap.innerHTML = "";
+
+  // Use latest month as summary
+  const latestMonth = allMonths[allMonths.length - 1];
+  const prevMonth = allMonths[allMonths.length - 13]; // same month previous year
+
+  ISLANDS.filter(i => activeIslands.has(i)).forEach(isl => {
+    const latest = byIsland[isl][latestMonth];
+    const prev   = prevMonth ? byIsland[isl][prevMonth] : null;
+
+    let deltaHtml = "";
+    if (latest != null && prev != null && prev !== 0) {
+      const pct = ((latest - prev) / prev) * 100;
+      const cls = pct >= 0 ? "up" : "down";
+      const arrow = pct >= 0 ? "▲" : "▼";
+      deltaHtml = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% YoY</div>`;
+    }
+
+    const card = document.createElement("div");
+    card.className = "stat";
+    card.style.borderLeftColor = ISLAND_COLORS[isl];
+    card.style.borderLeftWidth = "3px";
+    card.innerHTML = `
+      <div class="name">${ISLAND_LABELS[isl]} · ${latestMonth}</div>
+      <div class="value">${formatValue(latest, currentMetric)}</div>
+      ${deltaHtml}
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+fetch(CSV_PATH)
+  .then(r => {
+    if (!r.ok) throw new Error(`Failed to load ${CSV_PATH}`);
+    return r.text();
+  })
+  .then(text => init(parseCSV(text)))
+  .catch(err => {
+    document.getElementById("loading").innerHTML =
+      `<div style="color:#f87171;">${err.message}<br><br>` +
+      `Serve this folder via a local web server:<br>` +
+      `<code style="background:#1e293b;padding:4px 8px;border-radius:4px;">python -m http.server 8000</code><br>` +
+      `then open <code>http://localhost:8000/</code></div>`;
+  });
+</script>
+</body>
+</html>

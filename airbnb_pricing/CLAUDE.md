@@ -108,9 +108,6 @@ There are TWO sets of nav buttons on the page (inline calendar + booking sidebar
 - CSS class names are obfuscated and **may change** when Airbnb deploys updates — rerun `inspect_calendar.py` to re-identify them if calendar data stops working
 - Pricing fetch navigates away from the listing page and back — adds significant time per listing if many available windows exist
 - Unit number extraction uses regex heuristics — may miss unusual formats
-2026-03-28 16:35:02  
----
-## Run started: 2026-03-28 16:35:02  (31 listings)
 
 2026-03-28 16:41:22  
 ---
@@ -273,4 +270,8 @@ There are TWO sets of nav buttons on the page (inline calendar + booking sidebar
 2026-03-29 11:55:55  [7/8] OK     https://www.airbnb.com/rooms/886402393022040490  unit=?  avail=34  booked=59  windows=15  priced=3  reviews=116  score=4.97
 2026-03-29 11:59:11  [8/8] OK     https://www.airbnb.com/rooms/1573469505878553212  unit=?  avail=13  booked=51  windows=6  priced=5  reviews=7  score=4.86
 2026-03-29 11:59:11  Run finished: 2026-03-29 11:59:11
+
+2026-03-29 22:10:50  
+---
+## Run started: 2026-03-29 22:10:50  (8 listings)
 
