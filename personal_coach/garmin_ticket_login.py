@@ -98,7 +98,7 @@ def write_garth_compat(garth_dir: str | Path | None = None) -> None:
         json.dump({"oauth_token": "dummy", "oauth_token_secret": "dummy"}, f, indent=4)
     with (gdir / "domain_profile.json").open("w") as f:
         json.dump({}, f)
-    print(f"✅ Wrote compatibility stubs under {gdir}")
+    print(f"[OK] Wrote compatibility stubs under {gdir}")
 
 
 def create_session_from_service_ticket(
@@ -123,7 +123,7 @@ def create_session_from_service_ticket(
     )
     auth.save_native_session(session)
     out = auth.native_oauth2_path
-    print(f"✅ Saved pirate-garmin session to {out}")
+    print(f"[OK] Saved pirate-garmin session to {out}")
     return Path(out)
 
 
@@ -198,7 +198,7 @@ def main() -> int:
     try:
         st = parse_service_ticket(raw)
     except ValueError as e:
-        print(f"❌ {e}", file=sys.stderr)
+        print(f"[ERROR] {e}", file=sys.stderr)
         return 1
 
     print(f"Using ticket: {st[:20]}...", flush=True)
@@ -206,13 +206,13 @@ def main() -> int:
     try:
         native_path = create_session_from_service_ticket(st, args.app_dir)
     except Exception as e:
-        print(f"❌ Token exchange failed: {e}", file=sys.stderr)
+        print(f"[ERROR] Token exchange failed: {e}", file=sys.stderr)
         return 1
 
     try:
         migrate_pirate_token_to_garth(native_path, args.garth_dir)
     except Exception as e:
-        print(f"❌ Migrate to Garth failed: {e}", file=sys.stderr)
+        print(f"[ERROR] Migrate to Garth failed: {e}", file=sys.stderr)
         return 1
 
     if args.compat:
@@ -222,9 +222,9 @@ def main() -> int:
         root = Path(__file__).resolve().parent
         sync_script = root / "garmin_sync.py"
         if not sync_script.is_file():
-            print(f"❌ garmin_sync.py not found at {sync_script}", file=sys.stderr)
+            print(f"[ERROR] garmin_sync.py not found at {sync_script}", file=sys.stderr)
             return 1
-        print("⬇️ Running garmin_sync.py ...", flush=True)
+        print("[SYNC] Running garmin_sync.py ...", flush=True)
         r = subprocess.run([sys.executable, str(sync_script)], cwd=root)
         return int(r.returncode)
 

@@ -28,48 +28,55 @@ class GarminSync:
             client = Garmin()
             client.login(token_dir)
             self.client = client
-            print("✅ Login successful using cached token!")
+            print("[OK] Login successful using cached token!")
             
             self._introspect_api()
             return True
             
         except Exception:
             # 2. If cached token failed or expired, trigger manual browser login fallback
-            print("\n⚠️ Token expired or not found. Initiating manual browser login fallback...")
-            
+            print("\n[WARNING] Token expired or not found. Initiating manual browser login fallback...")
+
+            # If stdin is not a tty (e.g. called from Streamlit dashboard), the interactive
+            # input() prompt in garmin_ticket_login.py will hang forever.  Bail out early with
+            # a clear message so the caller can surface the auth UI instead.
+            if not sys.stdin.isatty():
+                print("[AUTH_REQUIRED] No interactive terminal detected. Use the dashboard Re-authorize section to log in.")
+                return False
+
             # Dynamically resolve garmin_ticket_login.py path (must be in the same directory)
             script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "garmin_ticket_login.py")
-            
+
             if not os.path.exists(script_path):
-                print(f"❌ Error: Could not find {script_path}.")
+                print(f"[ERROR] Could not find {script_path}.")
                 print("Fallback failed. Please run the login script manually.")
                 return False
 
             try:
                 # Call script: open browser and generate compat oauth1 + domain_profile stubs
                 result = subprocess.run([sys.executable, script_path, "--open-browser", "--compat"])
-                
+
                 # Check if the subprocess completed successfully (0 = success)
                 if result.returncode != 0:
-                    print("❌ Manual login process was aborted or failed.")
+                    print("[ERROR] Manual login process was aborted or failed.")
                     return False
-                    
+
                 # 3. Manual login succeeded, token is written — retry cached login
-                print("\n🔄 Loading newly fetched token...")
+                print("\n[RELOAD] Loading newly fetched token...")
                 client = Garmin()
                 client.login(token_dir)
                 self.client = client
-                print("✅ Login successful using new token!")
-                
+                print("[OK] Login successful using new token!")
+
                 self._introspect_api()
                 return True
-                
+
             except Exception as e:
-                print(f"❌ Failed to process manual login: {e}")
+                print(f"[ERROR] Failed to process manual login: {e}")
                 return False
 
     def _introspect_api(self):
-        print("🔍 Scanning API capabilities...")
+        print("[SCAN] Scanning API capabilities...")
         EXCLUDE = ['get_activities', 'get_activities_by_date', 'download_activity', 'get_weekly_intensity_minutes']
         SPECIAL = ['get_lactate_threshold', 'get_race_predictions']
 
@@ -118,7 +125,7 @@ class GarminSync:
         yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
 
         # Group 1: Static
-        print("⬇️ Syncing Global/Static Data...")
+        print("[SYNC] Syncing Global/Static Data...")
         for method in self.static_methods:
             try:
                 print(f"   > Calling: {method}()...")
@@ -126,7 +133,7 @@ class GarminSync:
             except: pass
 
         # Group 6: Special
-        print("⬇️ Syncing Special Data...")
+        print("[SYNC] Syncing Special Data...")
         try:
             if 'get_lactate_threshold' in self.special_methods:
                 print("   > Calling: get_lactate_threshold...")
@@ -136,10 +143,10 @@ class GarminSync:
                 print("   > Calling: get_race_predictions...")
                 self._save(self.client.get_race_predictions(startdate=yesterday, enddate=today), 
                            'get_race_predictions', 'latest.json')
-        except Exception as e: print(f"   ⚠️ Special failed: {e}")
+        except Exception as e: print(f"   [WARNING] Special failed: {e}")
 
         # Group 4: Range
-        print("⬇️ Syncing Range Data (Yesterday -> Today)...")
+        print("[SYNC] Syncing Range Data (Yesterday -> Today)...")
         for method, k1, k2 in self.range_methods:
             try:
                 print(f"   > Calling: {method}({yesterday}, {today})...")
@@ -147,7 +154,7 @@ class GarminSync:
             except: pass
 
         # Group 2: Daily
-        print(f"⬇️ Syncing Daily Data ({days_back} days)...")
+        print(f"[SYNC] Syncing Daily Data ({days_back} days)...")
         for i in range(days_back):
             d = (datetime.date.today() - datetime.timedelta(days=i)).isoformat()
             for method, arg_name in self.daily_methods:
@@ -159,12 +166,12 @@ class GarminSync:
                 except: pass
         
         # Group 3: Activities
-        print(f"\n⬇️ Syncing Activities ({activity_limit})...")
+        print(f"\n[SYNC] Syncing Activities ({activity_limit})...")
         try:
             print(f"   > Calling: get_activities(0, {activity_limit})...")
             activities = self.client.get_activities(0, activity_limit)
         except Exception as e:
-            print(f"❌ Failed to get activity list: {e}"); return
+            print(f"[ERROR] Failed to get activity list: {e}"); return
 
         for index, act in enumerate(activities):
             act_id = act['activityId']

@@ -26,6 +26,7 @@ class DataProcessor:
             'manual': os.path.join(data_dir, 'manual_inputs'),
             'blocks': os.path.join(data_dir, 'blocks', 'training_blocks.json'),
             'aux': os.path.join(data_dir, 'blocks', 'auxiliary_log.json'),
+            'daily_plans': os.path.join(data_dir, 'blocks', 'daily_plans.json'),
             'ledger': os.path.join(data_dir, 'derived', 'daily_health_metrics.csv'),
             
             # 3. AI Memory Paths (NEW)
@@ -57,6 +58,10 @@ class DataProcessor:
         # Initialize Aux
         if not os.path.exists(self.paths['aux']):
             with open(self.paths['aux'], 'w') as f: json.dump([], f)
+
+        # Initialize Daily Plans
+        if not os.path.exists(self.paths['daily_plans']):
+            with open(self.paths['daily_plans'], 'w') as f: json.dump({}, f)
             
         # Initialize Semantic Memory (User Profile)
         if not os.path.exists(self.paths['semantic_memory']):
@@ -69,7 +74,7 @@ class DataProcessor:
                     with open(raw_profile_path, 'r') as f:
                         garmin_data = json.load(f)
                 except Exception as e:
-                    print(f"⚠️ Could not load Garmin profile: {e}")
+                    print(f"[WARNING] Could not load Garmin profile: {e}")
             
             # Merge into our Semantic Memory
             default_profile = {
@@ -364,6 +369,20 @@ class DataProcessor:
         current = self.load_json_safe(self.paths['aux'])
         if isinstance(current, dict): current = [] # Fallback
         return [x for x in current if start_str <= x['date'] <= end_str]
+
+    def get_daily_plan(self, date_str: str) -> str:
+        plans = self.load_json_safe(self.paths['daily_plans'])
+        if not isinstance(plans, dict):
+            plans = {}
+        return plans.get(date_str, "")
+
+    def save_daily_plan(self, date_str: str, plan_text: str):
+        plans = self.load_json_safe(self.paths['daily_plans'])
+        if not isinstance(plans, dict):
+            plans = {}
+        plans[date_str] = plan_text.strip()
+        with open(self.paths['daily_plans'], 'w') as f:
+            json.dump(plans, f, indent=4)
 
     def add_aux_activity(self, date_str, event_type, desc):
         with open(self.paths['aux'], 'r') as f: current = json.load(f)
