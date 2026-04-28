@@ -1,0 +1,5 @@
+*.exe
+*.obj
+*.out
+build_output.txt
+compile_out.txt

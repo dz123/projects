@@ -2,6 +2,8 @@ import os
 
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_mail import Mail, Message
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 try:
     import requests as http_requests
@@ -21,6 +23,13 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 
 mail = Mail(app)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://",
+)
 
 
 def get_geo(ip):
@@ -57,6 +66,7 @@ def work():
     return render_template('work.html')
 
 @app.route('/contact', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def contact():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -65,6 +75,11 @@ def contact():
 
         if not name or not email:
             flash('Please fill out both fields.', 'error')
+            return redirect(url_for('contact'))
+
+        # Honeypot: bots fill hidden fields, humans don't see them
+        if request.form.get('website', '').strip():
+            flash('Your message was sent! Daisy will be in touch soon.', 'success')
             return redirect(url_for('contact'))
 
         ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()

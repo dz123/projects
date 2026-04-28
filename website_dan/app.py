@@ -7,6 +7,8 @@ except ImportError:
     HAS_REQUESTS = False
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_mail import Mail, Message
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,6 +23,13 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 
 mail = Mail(app)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://",
+)
 
 
 def get_geo(ip):
@@ -41,6 +50,11 @@ def get_geo(ip):
 
 
 def send_contact_email(name, email, message, redirect_endpoint):
+    # Honeypot: bots fill hidden fields, humans don't see them
+    if request.form.get('website', '').strip():
+        flash('Message sent successfully.', 'success')
+        return redirect(url_for(redirect_endpoint))
+
     ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
     country_code, country = get_geo(ip)
 
@@ -89,6 +103,7 @@ def work():
     return render_template('work.html')
 
 @app.route('/contact', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def contact():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -118,6 +133,7 @@ def simple_work():
     return render_template('simple/work.html')
 
 @app.route('/simple/contact', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def simple_contact():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
