@@ -3,3 +3,6 @@
 *.out
 build_output.txt
 compile_out.txt
+main.cpp
+solution.py
+solution17.py
