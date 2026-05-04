@@ -6,3 +6,4 @@ compile_out.txt
 main.cpp
 solution.py
 solution17.py
+*.csv
