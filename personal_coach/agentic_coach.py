@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 from typing_extensions import TypedDict
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -27,12 +27,12 @@ class AgenticCoach:
         
         self.api_key = self._find_api_key()
         if not self.api_key:
-            print("⚠️ Agentic Coach: No API Key found.")
+            print("[WARNING] Agentic Coach: No API Key found.")
         else:
-            os.environ["GEMINI_API_KEY"] = self.api_key
-        
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.4, api_key=self.api_key)
-        self.router_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.0, api_key=self.api_key)
+            os.environ["OPENAI_API_KEY"] = self.api_key
+
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.4, api_key=self.api_key)
+        self.router_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, api_key=self.api_key)
         
         graph_builder = StateGraph(State)
         graph_builder.add_node("coach", self._coach_node)
@@ -52,15 +52,15 @@ class AgenticCoach:
         self.graph = graph_builder.compile(checkpointer=self.memory)
 
     def _find_api_key(self):
-        key = os.getenv("GEMINI_KEY")
+        key = os.getenv("OPENAI_KEY")
         if key: return key
         current_dir = Path(__file__).resolve().parent
         env_path = current_dir / ".env"
         if env_path.exists():
             load_dotenv(dotenv_path=env_path, override=True)
-            key = os.getenv("GEMINI_KEY")
+            key = os.getenv("OPENAI_KEY")
             if key: return key
-        try: return st.secrets["GEMINI_KEY"]
+        try: return st.secrets["OPENAI_KEY"]
         except: return None
 
     def _route_message(self, state: State) -> str:
@@ -199,7 +199,7 @@ class AgenticCoach:
 
         working_memory_str = json.dumps(working_memory_dict, indent=2)
 
-        system_instructions = f”””
+        system_instructions = f"""
         Act as an elite sports data scientist and physiologist.
 
         **Data Inputs:**
@@ -212,7 +212,7 @@ class AgenticCoach:
 
         **Analysis Instructions:**
         1. **Intent vs. Execution:** Use the working memory JSON data as your analysis framework. Directly connect the `daily_readiness` metrics (sleep/HRV/etc.) to the actual running performance.
-        2. **Historical Comparison:** If “Historical Context” is provided, explicitly compare today's run data against past performance to highlight progress or recurring issues.
+        2. **Historical Comparison:** If "Historical Context" is provided, explicitly compare today's run data against past performance to highlight progress or recurring issues.
         3. **Telemetry Analysis (critical):**
            - Evaluate the curve shapes of labeled laps (pace, cadence, elevation).
            - Identify cardiac lag during speed/interval work. Compare actual/peak HR against the expected zones from the Baseline Profile.
@@ -228,10 +228,10 @@ class AgenticCoach:
 
         ### Recommendations
         *(Provide actionable physiological or training advice for next steps.)*
-        “””
+        """
 
         run_date = working_memory_dict.get('date', 'today')
-        user_message = f”Please analyze the workout named '{run_name}' that I did on {run_date}.”
+        user_message = f"Please analyze the workout named '{run_name}' that I did on {run_date}."
 
         return self.chat(
             user_input=user_message, 
@@ -265,7 +265,7 @@ class AgenticCoach:
         }}
         """
         # Create a temporary stateless LLM call for formatting
-        formatting_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.1, api_key=self.api_key)
+        formatting_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1, api_key=self.api_key)
         response = formatting_llm.invoke([SystemMessage(content="You return strictly JSON."), HumanMessage(content=prompt)])
         
         try:
@@ -292,7 +292,7 @@ class AgenticCoach:
             "stress_during_sleep": yesterday_raw.get('avgSleepStress')
         }
 
-        system_instructions = f”””
+        system_instructions = f"""
         Act as a Holistic Health & Performance Doctor.
 
         **Core Objective:** Based on long-term data trends and last night's sleep quality ({yesterday_str}), provide a deep analysis of the athlete's recovery status for today ({today_str}).
@@ -305,7 +305,7 @@ class AgenticCoach:
         - Deep Sleep: {sleep_details['deep_sleep_min']:.0f} minutes
         - REM Sleep: {sleep_details['rem_sleep_min']:.0f} minutes
         - Awake/Restless: {sleep_details['awake_min']:.0f} minutes
-        - Garmin Feedback: “{sleep_details['feedback']}”
+        - Garmin Feedback: "{sleep_details['feedback']}"
         - Overnight Stress: {sleep_details['stress_during_sleep']} (lower is better)
 
         **Analysis Required (use Markdown):**
@@ -315,7 +315,7 @@ class AgenticCoach:
         *Provide very specific medical/physiological observations.*
 
         ### Last Night's Sleep Quality
-        *Don't just read the total score. Compare Deep Sleep (physical repair) vs. REM Sleep (neural/mental repair) ratios. Was the athlete truly rested, or in a state of “body recovered but mind still fatigued”? Factor in overnight stress.*
+        *Don't just read the total score. Compare Deep Sleep (physical repair) vs. REM Sleep (neural/mental repair) ratios. Was the athlete truly rested, or in a state of "body recovered but mind still fatigued"? Factor in overnight stress.*
 
         ### Today's Readiness Verdict
         *Synthesize all objective data and provide a clear training recommendation for today ({today_str}).*
@@ -323,10 +323,10 @@ class AgenticCoach:
         * [GREEN LIGHT: Excellent condition, cleared for high-intensity training]
         * [YELLOW LIGHT: Recovering, recommend easy aerobic or cross-training only]
         * [RED LIGHT: Severe fatigue or illness risk, recommend complete rest]
-        “””
+        """
 
         # Route to the Doctor agent for health analysis
-        user_message = f”Based on my recent physiological metrics, please provide a deep analysis of my health, recovery status, and sleep quality for today ({today_str}).”
+        user_message = f"Based on my recent physiological metrics, please provide a deep analysis of my health, recovery status, and sleep quality for today ({today_str})."
 
         return self.chat(
             user_input=user_message, 

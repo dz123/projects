@@ -1,4 +1,4 @@
-from google import genai
+from openai import OpenAI
 import os
 import streamlit as st
 from dotenv import load_dotenv
@@ -7,38 +7,38 @@ import json
 import pandas as pd
 
 class AIAnalyst:
-    def __init__(self, model="gemini-flash-latest"):
-        self.model_id = model if model.startswith("models/") else f"models/{model}"
+    def __init__(self, model="gpt-4o-mini"):
+        self.model_id = model
         self.api_key = self._find_api_key()
-        
+
         try:
             if self.api_key:
-                self.client = genai.Client(api_key=self.api_key)
+                self.client = OpenAI(api_key=self.api_key)
             else:
                 self.client = None
-                print("⚠️ AI Analyst: No API Key found.")
+                print("[WARNING] AI Analyst: No API Key found.")
         except Exception as e:
             self.client = None
-            print(f"❌ SDK Init Error: {e}")
+            print(f"[ERROR] SDK Init Error: {e}")
 
     def _find_api_key(self):
-        """Hunts for the GEMINI_KEY in Environment, Local .env, or Streamlit Secrets."""
-        key = os.getenv("GEMINI_KEY")
+        """Hunts for the OPENAI_KEY in Environment, Local .env, or Streamlit Secrets."""
+        key = os.getenv("OPENAI_KEY")
         if key: return key
-        
+
         current_dir = Path(__file__).resolve().parent
         env_path = current_dir / ".env"
         if env_path.exists():
             load_dotenv(dotenv_path=env_path, override=True)
-            key = os.getenv("GEMINI_KEY")
+            key = os.getenv("OPENAI_KEY")
             if key: return key
-            
-        try: return st.secrets["GEMINI_KEY"]
+
+        try: return st.secrets["OPENAI_KEY"]
         except: return None
 
     def analyze_run(self, context_dict):
         if not self.client:
-            return "❌ Configuration Error: GEMINI_KEY not found."
+            return "[ERROR] Configuration Error: OPENAI_KEY not found."
 
         run_ctx = context_dict['run_context']
         
@@ -97,19 +97,19 @@ class AIAnalyst:
         """
         
         try:
-            response = self.client.models.generate_content(
+            response = self.client.chat.completions.create(
                 model=self.model_id,
-                contents=prompt
+                messages=[{"role": "user", "content": prompt}]
             )
-            return response.text
+            return response.choices[0].message.content
         except Exception as e:
-            return f"❌ AI Analysis Failed: {str(e)}"
+            return f"[ERROR] AI Analysis Failed: {str(e)}"
 
     def analyze_holistic_health(self, history_df, yesterday_raw):
         """
         Analyzes 14-day trends + yesterday's deep sleep data.
         """
-        if not self.client: return "❌ No API Key."
+        if not self.client: return "[ERROR] No API Key."
 
         # 1. Summarize History
         trends = history_df.to_markdown()
@@ -155,10 +155,10 @@ class AIAnalyst:
         """
 
         try:
-            response = self.client.models.generate_content(
+            response = self.client.chat.completions.create(
                 model=self.model_id,
-                contents=prompt
+                messages=[{"role": "user", "content": prompt}]
             )
-            return response.text
+            return response.choices[0].message.content
         except Exception as e:
-            return f"❌ Analysis Failed: {str(e)}"
+            return f"[ERROR] Analysis Failed: {str(e)}"
