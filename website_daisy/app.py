@@ -1,18 +1,10 @@
 import os
-from concurrent.futures import ThreadPoolExecutor
 
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_mail import Mail, Message
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
-try:
-    import requests as http_requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
-
-_geo_executor = ThreadPoolExecutor(max_workers=1)
 
 load_dotenv()
 
@@ -33,28 +25,6 @@ limiter = Limiter(
     default_limits=[],
     storage_uri="memory://",
 )
-
-
-def _fetch_geo(ip):
-    r = http_requests.get(
-        f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,city",
-        timeout=2
-    )
-    data = r.json()
-    if data.get("status") == "success":
-        return data.get("countryCode", ""), f"{data.get('country', '')} ({data.get('city', '')})"
-    return "", "unknown"
-
-
-def get_geo(ip):
-    """Returns (country_code, display_string). Hard 3s wall-clock timeout via thread."""
-    if not HAS_REQUESTS:
-        return "", "unknown"
-    try:
-        future = _geo_executor.submit(_fetch_geo, ip)
-        return future.result(timeout=3)
-    except Exception:
-        return "", "unknown"
 
 
 @app.route('/')
@@ -91,11 +61,6 @@ def contact():
             return redirect(url_for('contact'))
 
         ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
-        country_code, country = get_geo(ip)
-
-        if country_code and country_code != "US":
-            flash('Your message was sent! Daisy will be in touch soon.', 'success')
-            return redirect(url_for('contact'))
 
         try:
             recipient = os.environ.get('MAIL_RECIPIENT')
@@ -104,7 +69,7 @@ def contact():
                 sender=app.config['MAIL_USERNAME'],
                 recipients=[recipient]
             )
-            body = f"Someone reached out via your website!\n\nName:    {name}\nEmail:   {email}\nIP:      {ip}\nCountry: {country}\n"
+            body = f"Someone reached out via your website!\n\nName:    {name}\nEmail:   {email}\nIP:      {ip}\n"
             if message:
                 body += f"\nMessage:\n{message}\n"
             msg.body = body
