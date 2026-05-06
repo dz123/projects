@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_mail import Mail, Message
@@ -10,6 +11,8 @@ try:
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
+
+_geo_executor = ThreadPoolExecutor(max_workers=1)
 
 load_dotenv()
 
@@ -32,21 +35,26 @@ limiter = Limiter(
 )
 
 
+def _fetch_geo(ip):
+    r = http_requests.get(
+        f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,city",
+        timeout=2
+    )
+    data = r.json()
+    if data.get("status") == "success":
+        return data.get("countryCode", ""), f"{data.get('country', '')} ({data.get('city', '')})"
+    return "", "unknown"
+
+
 def get_geo(ip):
-    """Returns (country_code, display_string). country_code is '' on lookup failure."""
+    """Returns (country_code, display_string). Hard 3s wall-clock timeout via thread."""
     if not HAS_REQUESTS:
         return "", "unknown"
     try:
-        r = http_requests.get(
-            f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,city",
-            timeout=3
-        )
-        data = r.json()
-        if data.get("status") == "success":
-            return data.get("countryCode", ""), f"{data.get('country', '')} ({data.get('city', '')})"
+        future = _geo_executor.submit(_fetch_geo, ip)
+        return future.result(timeout=3)
     except Exception:
-        pass
-    return "", "unknown"
+        return "", "unknown"
 
 
 @app.route('/')
