@@ -1,10 +1,13 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_mail import Mail, Message
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
+
+_mail_executor = ThreadPoolExecutor(max_workers=2)
 
 load_dotenv()
 
@@ -46,7 +49,8 @@ def send_contact_email(name, email, message, redirect_endpoint):
         if message:
             body += f"\nMessage:\n{message}\n"
         msg.body = body
-        mail.send(msg)
+        future = _mail_executor.submit(mail.send, msg)
+        future.result(timeout=5)
         flash('Message sent successfully.', 'success')
     except Exception:
         flash('Something went wrong. Please try again later.', 'error')
