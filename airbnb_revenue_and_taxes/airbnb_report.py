@@ -157,6 +157,15 @@ def load_and_process(csv_path: Path):
             if code:
                 refunds[code] = refunds.get(code, 0.0) + _float(r.get("Amount", ""))
 
+    # Confirmation codes that have a "Pass Through Tot" row (all time). A genuine
+    # income-earning booking always shows up as both a Reservation row and a
+    # Pass Through Tot row. A code with a Reservation row but no Pass Through Tot
+    # is a cancellation (or a cancelled-and-rebooked duplicate) that earns no
+    # income, so we skip those reservations entirely.
+    ptt_codes: set[str] = {r["Confirmation code"].strip() for r in rows
+                           if r["Type"].strip() == "Pass Through Tot"
+                           and r["Confirmation code"].strip()}
+
     # Build monthly data from January through latest month
     all_data: dict[tuple, dict] = {}
 
@@ -178,6 +187,8 @@ def load_and_process(csv_path: Path):
             code         = r["Confirmation code"].strip()
             if code in EXCLUDED_CODES:
                 continue
+            if code not in ptt_codes:
+                continue  # cancellation: Reservation row with no Pass Through Tot
 
             amount       = _float(r.get("Amount", ""))
             service_fee  = _float(r.get("Service fee", ""))
@@ -241,7 +252,7 @@ def write_month_sheet(ws, data, m_start, m_end):
 
     # ── TOP SUMMARY ────────────────────────────────────────────────────────────
 
-    for col, label in enumerate(["", "PM 1105", "PM 2505", "MV 1321", "Total"], 1):
+    for col, label in enumerate(["", *PROPERTIES, "Total"], 1):
         _style(ws.cell(row=cur, column=col, value=label), bold=True, h_align="center")
     cur += 1
 
@@ -421,10 +432,12 @@ def main():
     if len(sys.argv) > 1:
         csv_path = Path(sys.argv[1])
     else:
-        candidates = sorted(DOWNLOADS.glob("airbnb_*.csv"),
+        # Match only timestamped exports: airbnb_YYYYMMDD_HHMMSS.csv
+        d8, d6 = "[0-9]" * 8, "[0-9]" * 6
+        candidates = sorted(DOWNLOADS.glob(f"airbnb_{d8}_{d6}.csv"),
                             key=lambda p: p.stat().st_mtime, reverse=True)
         if not candidates:
-            sys.exit("No airbnb_*.csv found in Downloads. "
+            sys.exit("No airbnb_YYYYMMDD_HHMMSS.csv found in Downloads. "
                      "Pass the CSV file path as an argument.")
         csv_path = candidates[0]
         print(f"Using: {csv_path.name}")
