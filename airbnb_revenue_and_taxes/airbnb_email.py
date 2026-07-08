@@ -29,7 +29,7 @@ except ImportError:
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 SENDER        = "danielzhou123@gmail.com"
-RECIPIENT     = ["danielzhou123@gmail.com", "daisy.rukawa@gmail.com"]
+RECIPIENT     = ["danielzhou123@gmail.com"]
 APP_PASSWORD  = "mqzd zhlh yonj ebyw"  # fill in your Gmail App Password here
 
 # ── Read summaries from xlsx ──────────────────────────────────────────────────
@@ -54,9 +54,16 @@ def read_summaries(xlsx_path: Path):
         if "(incomplete)" in ws.title.lower():
             continue
 
-        # Row 1: blank | prop1 | prop2 | prop3 | Total
-        header_row = [ws.cell(row=1, column=c).value for c in range(2, 6)]
-        headers = [h for h in header_row if h]  # drop trailing None
+        # Row 1: blank | prop1 .. propN | Total  (property count varies)
+        headers = []
+        c = 2
+        while True:
+            v = ws.cell(row=1, column=c).value
+            if v in (None, ""):
+                break
+            headers.append(v)
+            c += 1
+        ncol = len(headers)  # properties + Total
 
         # Rows 2-4: label | values...
         rows = []
@@ -64,7 +71,8 @@ def read_summaries(xlsx_path: Path):
             label = ws.cell(row=r, column=1).value
             if not label:
                 continue
-            values = [ws.cell(row=r, column=c).value or 0.0 for c in range(2, 6)]
+            values = [ws.cell(row=r, column=cc).value or 0.0
+                      for cc in range(2, 2 + ncol)]
             rows.append((label, values))
 
         if not rows:

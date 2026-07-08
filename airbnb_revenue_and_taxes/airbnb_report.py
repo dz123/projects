@@ -45,15 +45,17 @@ LISTING_MAP = {
     "1blk to waikiki beach! newly renovated king condo":    "PM 1105",
     "25thfl ocean view 1blk to waikiki beach king condo":   "PM 2505",
     "partial ocean view king condo at maui vista kihei":    "MV 1321",
+    "new ground fl 1bd/2ba @kamaole sands, 3 min beach":     "KS 4113",
 }
 
 PROPERTY_FULL = {
     "PM 1105": "Pacific Monarch 1105",
     "PM 2505": "Pacific Monarch 2505",
     "MV 1321": "Maui Vista 1321",
+    "KS 4113": "Kamaole Sands 4113",
 }
 
-PROPERTIES = ["MV 1321", "PM 2505", "PM 1105"]
+PROPERTIES = ["MV 1321", "PM 2505", "PM 1105", "KS 4113"]
 
 # Confirmation codes to exclude (e.g. displaced bookings replaced by other reservations)
 EXCLUDED_CODES = {
@@ -243,6 +245,11 @@ def write_month_sheet(ws, data, m_start, m_end):
     tot = {k: sum(summary[p][k] for p in PROPERTIES)
            for k in ("gross_for_tax", "airbnb_fee", "net_income", "get", "tat", "otat")}
 
+    # Column of the summary "Total" (after the per-property columns) and the
+    # note that follows it — derived so they track the number of properties.
+    total_col = 2 + len(PROPERTIES)
+    note_col  = total_col + 1
+
     max_guests = max((len(data[p]) for p in PROPERTIES), default=0)
     ws.column_dimensions["A"].width = 24
     for ci in range(2, 2 + max_guests + 3):
@@ -262,7 +269,7 @@ def write_month_sheet(ws, data, m_start, m_end):
     for i, prop in enumerate(PROPERTIES):
         _style(ws.cell(row=cur, column=2+i, value=summary[prop]["gross_for_tax"]),
                h_align="right", fmt=MONEY_FMT, bg=C_YELLOW)
-    _style(ws.cell(row=cur, column=5, value=tot["gross_for_tax"]),
+    _style(ws.cell(row=cur, column=total_col, value=tot["gross_for_tax"]),
            bold=True, h_align="right", fmt=MONEY_FMT, bg=C_YELLOW)
     cur += 1
 
@@ -271,7 +278,7 @@ def write_month_sheet(ws, data, m_start, m_end):
     for i, prop in enumerate(PROPERTIES):
         _style(ws.cell(row=cur, column=2+i, value=summary[prop]["airbnb_fee"]),
                h_align="right", fmt=MONEY_FMT)
-    _style(ws.cell(row=cur, column=5, value=tot["airbnb_fee"]),
+    _style(ws.cell(row=cur, column=total_col, value=tot["airbnb_fee"]),
            bold=True, h_align="right", fmt=MONEY_FMT)
     cur += 1
 
@@ -281,9 +288,9 @@ def write_month_sheet(ws, data, m_start, m_end):
     for i, prop in enumerate(PROPERTIES):
         _style(ws.cell(row=cur, column=2+i, value=summary[prop]["net_income"]),
                h_align="right", fmt=MONEY_FMT, bg=C_LIGHT_GREEN)
-    _style(ws.cell(row=cur, column=5, value=tot["net_income"]),
+    _style(ws.cell(row=cur, column=total_col, value=tot["net_income"]),
            bold=True, h_align="right", fmt=MONEY_FMT, bg=C_LIGHT_GREEN)
-    _style(ws.cell(row=cur, column=6, value=TAX_NOTE),
+    _style(ws.cell(row=cur, column=note_col, value=TAX_NOTE),
            italic=True, fg=C_GRAY, bg=C_LIGHT_GREEN)
     cur += 1
 
