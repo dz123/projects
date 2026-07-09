@@ -168,6 +168,20 @@ def load_and_process(csv_path: Path):
                            if r["Type"].strip() == "Pass Through Tot"
                            and r["Confirmation code"].strip()}
 
+    # An altered reservation shows up as several Reservation rows under the same
+    # confirmation code. Treat these as duplicates and keep only the row with the
+    # largest Amount (the primary reservation); drop the smaller delta rows.
+    primary_res: dict[str, dict] = {}
+    for r in rows:
+        if r["Type"].strip() != "Reservation":
+            continue
+        code = r["Confirmation code"].strip()
+        if not code:
+            continue
+        if (code not in primary_res
+                or _float(r.get("Amount", "")) > _float(primary_res[code].get("Amount", ""))):
+            primary_res[code] = r
+
     # Build monthly data from January through latest month
     all_data: dict[tuple, dict] = {}
 
@@ -191,6 +205,8 @@ def load_and_process(csv_path: Path):
                 continue
             if code not in ptt_codes:
                 continue  # cancellation: Reservation row with no Pass Through Tot
+            if r is not primary_res.get(code):
+                continue  # duplicate alteration row: keep only the largest-Amount one
 
             amount       = _float(r.get("Amount", ""))
             service_fee  = _float(r.get("Service fee", ""))
