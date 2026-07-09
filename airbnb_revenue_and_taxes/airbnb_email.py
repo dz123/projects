@@ -13,6 +13,7 @@ Gmail setup:
 """
 
 import sys
+import argparse
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -30,6 +31,7 @@ except ImportError:
 
 SENDER        = "danielzhou123@gmail.com"
 RECIPIENT     = ["danielzhou123@gmail.com"]
+FINAL_EXTRA   = ["daisy.rukawa@gmail.com"]  # added only when run with --final
 APP_PASSWORD  = "mqzd zhlh yonj ebyw"  # fill in your Gmail App Password here
 
 # ── Read summaries from xlsx ──────────────────────────────────────────────────
@@ -142,10 +144,10 @@ def build_html(summaries):
 
 # ── Email sending ─────────────────────────────────────────────────────────────
 
-def send_email(subject, html_body, attachment_path, app_password):
+def send_email(subject, html_body, attachment_path, app_password, recipients):
     msg = MIMEMultipart("mixed")
     msg["From"]    = SENDER
-    msg["To"]      = ", ".join(RECIPIENT)
+    msg["To"]      = ", ".join(recipients)
     msg["Subject"] = subject
 
     msg.attach(MIMEText(html_body, "html"))
@@ -163,17 +165,23 @@ def send_email(subject, html_body, attachment_path, app_password):
         server.ehlo()
         server.starttls()
         server.login(SENDER, app_password)
-        server.sendmail(SENDER, RECIPIENT, msg.as_string())  # list is fine for sendmail
+        server.sendmail(SENDER, recipients, msg.as_string())  # list is fine for sendmail
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit("Usage: python airbnb_email.py <path/to/airbnb_taxes_*.xlsx>")
+    parser = argparse.ArgumentParser(
+        description="Email the latest complete-month Airbnb tax summary.")
+    parser.add_argument("xlsx", help="path to airbnb_taxes_*.xlsx")
+    parser.add_argument("--final", action="store_true",
+                        help=f"also send to {', '.join(FINAL_EXTRA)}")
+    args = parser.parse_args()
 
-    xlsx_path = Path(sys.argv[1])
+    xlsx_path = Path(args.xlsx)
     if not xlsx_path.exists():
         sys.exit(f"File not found: {xlsx_path}")
+
+    recipients = RECIPIENT + FINAL_EXTRA if args.final else list(RECIPIENT)
 
     summaries = read_summaries(xlsx_path)
     if not summaries:
@@ -189,8 +197,8 @@ def main():
         sys.exit("Set APP_PASSWORD in the script before running.")
     app_password = APP_PASSWORD
 
-    print(f"Sending '{subject}' to {', '.join(RECIPIENT)} ...")
-    send_email(subject, html_body, xlsx_path, app_password)
+    print(f"Sending '{subject}' to {', '.join(recipients)} ...")
+    send_email(subject, html_body, xlsx_path, app_password, recipients)
     print("Sent.")
 
 
