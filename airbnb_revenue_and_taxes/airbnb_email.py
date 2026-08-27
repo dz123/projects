@@ -32,7 +32,7 @@ except ImportError:
 SENDER        = "danielzhou123@gmail.com"
 RECIPIENT     = ["danielzhou123@gmail.com"]
 FINAL_EXTRA   = ["daisy.rukawa@gmail.com"]  # added only when run with --final
-APP_PASSWORD  = "mqzd zhlh yonj ebyw"  # fill in your Gmail App Password here
+APP_PASSWORD  = "raxu qkjl rerf qies"  # fill in your Gmail App Password here
 
 # ── Read summaries from xlsx ──────────────────────────────────────────────────
 
@@ -117,6 +117,50 @@ ROW_STYLES = {
     "airbnb net income": "net",
 }
 
+# Island groupings, matched against the xlsx header labels with spaces removed
+# (so both "MV 1321" and "MV1321" work).
+ISLANDS = [
+    ("Maui", {"MV1321", "KS4113"}),
+    ("Oahu", {"PM2505", "PM1105"}),
+]
+
+def _row_class(label):
+    return ROW_STYLES.get(label.lower().strip(), "")
+
+def _note_cell(label):
+    return (" <td class='note'>use this to file taxes</td>"
+            if "net income" in label.lower() else "<td class='note'></td>")
+
+def island_groups(headers):
+    """[(island, [column indexes])] for the islands present in these headers."""
+    groups = []
+    for name, members in ISLANDS:
+        idx = [i for i, h in enumerate(headers)
+               if str(h).replace(" ", "").upper() in members]
+        if idx:
+            groups.append((name, idx))
+    return groups
+
+def build_island_table(s):
+    """Per-island table: the two Maui units and the two Oahu units summed."""
+    groups = island_groups(s["headers"])
+    if not groups:
+        return ""
+
+    header_cells = "".join(f"<th>{name}</th>" for name, _ in groups)
+    header = (f"<tr><th class='lbl'>By Island: {s['heading']}</th>"
+              f"{header_cells}<th>Total</th></tr>")
+
+    data_rows = ""
+    for label, values in s["rows"]:
+        sums = [sum(values[i] or 0.0 for i in idx) for _, idx in groups]
+        cells = "".join(f"<td>{fmt_money(v)}</td>" for v in sums)
+        cells += f"<td>{fmt_money(sum(sums))}</td>"
+        data_rows += (f"<tr class='{_row_class(label)}'>"
+                      f"<td class='lbl'>{label}</td>{cells}{_note_cell(label)}</tr>")
+
+    return f"<table>{header}{data_rows}</table>"
+
 def build_html(summaries):
     sections = []
     for s in summaries:
@@ -127,17 +171,15 @@ def build_html(summaries):
 
         data_rows = ""
         for label, values in s["rows"]:
-            key = label.lower().strip()
-            cls = ROW_STYLES.get(key, "")
             cells = "".join(f"<td>{fmt_money(v)}</td>" for v in values)
-            note = (" <td class='note'>use this to file taxes</td>"
-                    if "net income" in key else "<td class='note'></td>")
-            data_rows += (f"<tr class='{cls}'>"
-                          f"<td class='lbl'>{label}</td>{cells}{note}</tr>")
+            data_rows += (f"<tr class='{_row_class(label)}'>"
+                          f"<td class='lbl'>{label}</td>{cells}"
+                          f"{_note_cell(label)}</tr>")
 
         sections.append(
             f"<h2>{heading}</h2>"
             f"<table>{header}{data_rows}</table>"
+            f"{build_island_table(s)}"
         )
 
     return f"<html><head>{CSS}</head><body>{''.join(sections)}</body></html>"
