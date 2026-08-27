@@ -12,7 +12,9 @@ Gmail setup:
     prompted.
 """
 
+import os
 import sys
+import getpass
 import argparse
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -32,7 +34,19 @@ except ImportError:
 SENDER        = "danielzhou123@gmail.com"
 RECIPIENT     = ["danielzhou123@gmail.com"]
 FINAL_EXTRA   = ["daisy.rukawa@gmail.com"]  # added only when run with --final
-APP_PASSWORD  = "raxu qkjl rerf qies"  # fill in your Gmail App Password here
+
+def get_app_password():
+    """Gmail App Password from GMAIL_APP_PASSWORD, else prompted for.
+
+    Never hard-code it here — this repo is public.
+    """
+    pw = os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+    if pw:
+        return pw
+    try:
+        return getpass.getpass(f"Gmail App Password for {SENDER}: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return ""
 
 # ── Read summaries from xlsx ──────────────────────────────────────────────────
 
@@ -235,9 +249,10 @@ def main():
 
     html_body = build_html(latest)
 
-    if not APP_PASSWORD:
-        sys.exit("Set APP_PASSWORD in the script before running.")
-    app_password = APP_PASSWORD
+    app_password = get_app_password()
+    if not app_password:
+        sys.exit("No app password given — set GMAIL_APP_PASSWORD or enter it "
+                 "when prompted.")
 
     print(f"Sending '{subject}' to {', '.join(recipients)} ...")
     send_email(subject, html_body, xlsx_path, app_password, recipients)
